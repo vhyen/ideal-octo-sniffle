@@ -1,0 +1,15 @@
+.idea
+*/__pycache__/*
+*/.pytest_cache/*
+*/.vscode/*
+*/.mypy_cache/*
+*/.pytest_cache/*
+*/.coverage
+*/.coverage.*
+*/.DS_Store
+*/.mypy_cache
+*/.pytest_cache
+*/.vscode
+
+prime_numbers
+app-logs

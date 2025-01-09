@@ -6,7 +6,9 @@ import os
 import shutil
 from datetime import datetime
 
-NUM_NUMBERS = 1000000
+# NUM_NUMBERS = 1000000
+S3_BUCKET_NAME = "fsa-de"
+S3_FILE_KEY = "shuffled_numbers.txt"
 
 def get_spark_app_config():
     spark_conf = SparkConf()
@@ -25,7 +27,7 @@ def is_prime(n):
         return True
     if n % 2 == 0:
         return False
-    # Only check odd numbers up to square root
+    
     for i in range(3, int(n ** 0.5) + 1, 2):
         if n % i == 0:
             return False
@@ -44,25 +46,30 @@ def delete_exist_folder(folder_path):
 
 if __name__ == '__main__':
     conf = get_spark_app_config()
-    spark = SparkSession.builder.config(conf=conf).getOrCreate()
+    # spark = SparkSession.builder.config(conf=conf).getOrCreate()
     
-    # rdd = spark.read.csv('arn:aws:s3:ap-southeast-1:381491951595:accesspoint/fsa-de-team-01')
-    # print(rdd.collect())
+    spark = SparkSession.builder\
+        .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:3.3.2") \
+        .config("fs.s3a.impl","org.apache.hadoop.fs.s3a.S3AFileSystem") \
+        .config("com.amazonaws.services.s3.enableV4", "true") \
+        .config("fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") \
+        .config(conf=conf) \
+        .getOrCreate()
+    
+    # rdd = spark.sparkContext.parallelize(range(1, NUM_NUMBERS + 1, 1))
+    
 
-    # # print(rdd.collect())
+    s3_path = f"s3a://{S3_BUCKET_NAME}/{S3_FILE_KEY}"
+    rdd = spark.sparkContext.textFile(s3_path) 
 
-    rdd = spark.sparkContext.parallelize(range(1, NUM_NUMBERS + 1, 1))
-
-    # numeric_rdd = rdd.map(lambda x: int(x) if x.isdigit() else None).filter(lambda x: x is not None)
-
-    # prime_rdd = numeric_rdd.filter(is_prime)
-    # rdd.repartition(3)
+    rdd = rdd.map(lambda x: int(x) if x.isdigit() else None).filter(lambda x: x is not None) 
+    
 
     prime_rdd = rdd.filter(is_prime)
 
     prime_numbers = prime_rdd.collect()
     
-    # Save to local file on driver
+
     # timestamp = datetime.now().strftime('%Y:%m:%d:%H:%M')
     timestamp = datetime.now().strftime('%m:%d:%H:%M')
 

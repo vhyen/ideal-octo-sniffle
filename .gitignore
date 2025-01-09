@@ -14,3 +14,5 @@
 prime_numbers
 app-logs
 data_*.txt
+
+.env
